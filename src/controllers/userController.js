@@ -32,7 +32,7 @@ export const registerUser = async (req, res) => {
     });
 
     await sendVerificationEmail(email,otp)
-    res.status(201).json({ message: "OTP Sent Successfull" ,email:user.email});
+    res.status(200).json({ success: true,message: "OTP Sent Successfull" ,user:user.email});
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
