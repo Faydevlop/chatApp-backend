@@ -12,6 +12,11 @@ export const registerUser = async (req, res) => {
     let userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: "User already exists" });
 
+    let usernameExists = await User.findOne({ username });
+    if (usernameExists) {
+      return res.status(400).json({ message: "Username already taken, please choose another one" });
+    }
+
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -42,8 +47,10 @@ export const registerUser = async (req, res) => {
 export const verifyOTP = async (req, res) => {
     try {
       const { email, otp } = req.body;
+      console.log('req is here');
+      
   
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email }).select("-password");
       if (!user) return res.status(400).json({ message: "User not found" });
   
       if (user.otp !== otp) return res.status(400).json({ message: "Invalid OTP" });
@@ -55,7 +62,7 @@ export const verifyOTP = async (req, res) => {
       user.otpExpires = null;
   
       await user.save();
-      res.status(200).json({ message: "Account verified successfully" });
+      res.status(200).json({ success: true,message: "Account verified successfully",user });
   
     } catch (error) {
       res.status(500).json({ message: error.message });
@@ -69,17 +76,76 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
     
     const user = await User.findOne({ email });
+
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
+
+    if (!user.isVerified) {
+      await User.deleteOne({ email });
+      return res.status(400).json({ message: "Account not verified. Please sign up again." });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-    res.status(200).json({ token, user });
+    res.status(200).json({ success: true,token, user });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+export const listEmailorUsername = async(req,res)=>{
+  try {
+    console.log('req is here');
+    
+    const searchQuery = req.query.searchQuery
+    const userId = req.user.id;
+
+    console.log('req is here',searchQuery,userId);
+    
+
+    if(!searchQuery){
+      return res.status(400).json({message:'Search Query is require'})
+    }
+
+    const users = await User.find({
+      $or:[
+        {username:{$regex:searchQuery,$options:"i"}},
+        {email:{$regex:searchQuery,$options:'i'}}
+      ],
+      _id:{$ne:userId},
+    }).select("username email avatar");
+
+    res.status(200).json(users);
+    
+    
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+
+export const addFriend = async(req,res)=>{
+  try {
+    const {userId,friendId} = req.body;
+    if (!userId || !friendId) {
+      return res.status(400).json({ message: "Both userId and friendId are required." });
+    }
+
+    // Prevent users from adding themselves
+    if (userId === friendId) {
+      return res.status(400).json({ message: "You cannot add yourself as a friend." });
+    }
+
+    const user = await User.findByIdAndUpdate(userId,{$addToSet:{friendsList:friendId}},{new:true});
+    await User.findByIdAndUpdate(friendId,{ $addToSet: { friendsList: userId } },{ new: true });
+
+    res.status(200).json({ message: "Friend added successfully", user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error adding friend" });
+  }
+}
  
