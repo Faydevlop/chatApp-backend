@@ -3,7 +3,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import http from "http";
 import connectDB from "./config/db.js";
-import setupMorgan from "./config/morgan.js";  // ✅ Import Morgan setup
+import setupMorgan from "./config/morgan.js";  
+import socketServer from "./sockets/sockets.js";
 
 // Load environment variables
 dotenv.config();
@@ -11,6 +12,7 @@ dotenv.config();
 // Initialize Express App
 const app = express();
 const server = http.createServer(app);
+// const io = 
 
 // Middleware
 app.use(cors());
@@ -33,4 +35,7 @@ app.use("/api/messages", messageRoutes);
 
 // Server Listening
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`)
+    socketServer(server)
+});

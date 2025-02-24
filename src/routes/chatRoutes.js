@@ -1,9 +1,12 @@
 import express from "express";
-import { createChat, getChats } from "../controllers/chatController.js";
+import { createChat, listChat } from "../controllers/chatController.js";
+import authMiddleware from "../middlewares/jwtVerify.js";
 
 const router = express.Router();
 
 router.post("/", createChat); // Create a new chat
-router.get("/:userId", getChats); // Get all chats for a user
+// List all Messages
+router.get('/listchat',authMiddleware,listChat);
+
 
 export default router;

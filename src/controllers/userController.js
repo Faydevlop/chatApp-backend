@@ -130,6 +130,9 @@ export const listEmailorUsername = async(req,res)=>{
 export const addFriend = async(req,res)=>{
   try {
     const {userId,friendId} = req.body;
+    console.log(userId,friendId);
+    
+    
     if (!userId || !friendId) {
       return res.status(400).json({ message: "Both userId and friendId are required." });
     }
@@ -148,4 +151,23 @@ export const addFriend = async(req,res)=>{
     res.status(500).json({ message: "Error adding friend" });
   }
 }
+
+export const listFriends = async (req, res) => {
+  try {
+    // Find the current user and populate the friendsList field
+    const user = await User.findById(req.user._id).populate(
+      "friendsList",
+      "_id username avatar"
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ users: user.friendsList });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error listing friends" });
+  }
+};
  

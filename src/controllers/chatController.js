@@ -19,13 +19,29 @@ export const createChat = async (req, res) => {
   }
 };
 
-// Get Chats for a User
-export const getChats = async (req, res) => {
+// Controller for listing chat between 2 users
+export const listChat = async(req,res)=>{
   try {
-    const userId = req.params.userId;
-    const chats = await Chat.find({ participants: userId }).populate("participants", "-password");
-    res.json(chats);
+    const userId = req.user._id
+    const friendId =  req.query.friendId;
+
+    console.log('req for the chat history is here',userId,friendId);
+    
+
+    const chat = await Chat.findOne({
+      participants: { $all: [userId, friendId] }
+    });
+
+    if (!chat) {
+      return res.status(200).json({ messages: [] });
+    }
+
+    // Fetch all messages in the chat
+    const messages = await Message.find({ chatId: chat._id }).sort("createdAt");
+
+    res.status(200).json({ messages });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error(error);
+    res.status(500).json({ message: "Error fetching messages" });
   }
-};
+}
