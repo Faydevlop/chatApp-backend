@@ -52,6 +52,7 @@ const socketServer = (server) => {
                 console.log(`📩 Message sent from ${sender} to ${receiver}`);
 
                 // Emit message to receiver's room
+                io.to(sender).emit("receiveMessage", newMessage);
                 io.to(receiver).emit("receiveMessage", newMessage);
             } catch (error) {
                 console.error("❌ Error sending message:", error);
